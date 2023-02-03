@@ -1,7 +1,9 @@
 # Projekt-Linux-Python
 
 Cel 1: zdobyć flagę użytkownika z pliku user.txt w katalogu użytkownika
+
 Cel 2: zdobyć flagę roota z pliku root.txt w katalogu roota
+
 Środowisko
 Na środowisko projektowe składa się:
 maszyna wirtualna Kali Linux (lub inna)
